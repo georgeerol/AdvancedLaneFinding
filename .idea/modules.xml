@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/CarND-Advanced-Lane-Lines.iml" filepath="$PROJECT_DIR$/.idea/CarND-Advanced-Lane-Lines.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/AdvancedLaneFinding.iml" filepath="$PROJECT_DIR$/.idea/AdvancedLaneFinding.iml" />
     </modules>
   </component>
 </project>
