@@ -186,6 +186,13 @@ display_image_with_gray_cmap(convert_BRG_to_RGB(undist),combined_binary,'Undisto
 To ge the bird's eye view of the lane we applied Perspective Transform to an image and used the cv2.getPerspectiveTransform()
 to ge the Transform Parameter M.
 
+4 Source points was pick in a trapezoidal shape(region masking) to represent a rectangle when looking down on the road 
+from above. They represents the vertices of the lane.
+```python
+vertices = np.array([[(200,imshape[0]),(520, 500), (763, 500), (1110,imshape[0])]], dtype=np.int32)
+```
+
+
 #### Perspective Transform Source Code
 ```python
 def mask_img(undistorted_img,ignore_mask_color,):
@@ -222,6 +229,31 @@ for image in test_images:
 ![Straight_line2](./pictures/Straight_line2PerspectiveTransform.png)
 
 ### 5. Detect lane pixels and fit to find the lane boundary.
+
+#### Line Finding Histogram
+After applying calibration,thresholding, and a perspective transform to a road image, we have a binary image where the
+lane lines stand out clearly. However, we needed a way to explicitly decide  which pixels are part of the lines and which
+belong to the left line and the right line.
+
+Plotting a histogram of where the binary activations occurred across the image was one potential solution.
+Below is a the historgram of brigh pixels along the x-axis for images test5.jpg(Blue) and test6.jpg(Orange)
+
+![Line Finding](./pictures/LineFidingOf2Images.png)
+
+#### Test 5 Image
+![ Test 5](./test_images/test5.jpg)
+
+#### Test 6 Image
+![ Test 6](./test_images/test6.jpg)
+
+#### Sliding Window Algorithm 
+With this histogram we were able to add up the pixel values along each column in the image. In our thresholded binary
+image, pixels are either 0 or 1, so the two most prominent peaks in the histogram will be good indicators of the x-position
+of the base of the lane lines.  We used it as a starting point for where to search for the lines. From that point we used
+the Sliding Window algorithm, placed around the line centers, to find and follow the lines up to the top of the frame.
+
+The parameters used for the Sliding Window are:
+
 
 
 
