@@ -116,6 +116,71 @@ With the Camera Calibration Matrix and Camera Distortion Coefficients, we were a
 ![test4](./pictures/test4UndistortedImage.png)
 
 ### 3.  Use color transforms, gradients, etc., to create a threshold binary image.
-Gradients is use to detect steep edges that are more likely to be lnaes in the first place.
+
+#### Canny Edge Detection
+Canny edge detection is use  to find pixels that were like to be part of a line in  an image. Canny is great at finding
+all possible lines in an image, but for lane dection, it gave us a lot of edges on scnery, and cars and other objects
+that we ended up discarding.
+ ![Canny Edge Detection](./pictures/CannyEdgeDetection.png)
+ 
+ With lane finding, we know ahead of time that the lines we are looking for are close to 
+vertical, to take advantage of that fact we can use gradients in a smarter way to detect steep edges that are more
+likely to be lanes in the first place. With Canny, we can take a derivative with respect to X and Y in the process of
+finding edges.
+
+#### Sobel Operator
+The Sobel operator is at the heart of the Canny Edge Detection algorithm. Applying it to an image is a way of taking
+the derivative of the image in the x or y direction. If we apply the Sobel x and y operators to this the image below and
+then we take the absolute value we get the result below
+#### Test images test3
+![test3](./test_images/test3.jpg)
+#### Absolute value of Sobel x and Sobel y
+![Sobel x y](./pictures/Sobelxy.png)
+
+##### X vs Y
+In the above images, we can see that the gradients taken in both the x and the y directions detect the lane lines
+and pick up other edges. Taking the gradient in the x direction emphasizes edges closer to vertical.
+Alternatively, taking the gradient in the y direction emphasizes edges closer to horizontal.
+  
+### Color and Gradient Threshold Source code
+*  To apply Gradient Threshold, we converted the image to gray scale and apply the Sobel x funtion with minimum of 20 and
+maximum of 100.
+* To apply Color  Threshold we converted the image to HLS color space and then apply the threshold values of
+minimum of 170 and maximum of 255/
+
+
+```python
+def apply_Sobel_x(gray):
+    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0) # Take the derivative in x
+    abs_sobelx = np.absolute(sobelx) # Absolute x derivative to accentuate lines away from horizontal
+    scaled_sobel = np.uint8(255*abs_sobelx/np.max(abs_sobelx))
+    return scaled_sobel
+    
+def apply_treshhold_gradient_on_x(scaled_sobel,tresh_min,tresh_max):
+    sxbinary = np.zeros_like(scaled_sobel)
+    sxbinary[(scaled_sobel >= tresh_min) & (scaled_sobel <= tresh_max)] = 1
+    return sxbinary
+
+
+test_img = cv2.imread('../test_images/test1.jpg')
+undist = cv2.undistort(test_img, mtx, dist, None, mtx)
+gray = cv2.cvtColor(undist,cv2.COLOR_BGR2GRAY)
+hue_saturation_lightness = cv2.cvtColor(undist, cv2.COLOR_BGR2HLS) #HSL
+
+scaled_sobel = apply_Sobel_x(gray)
+sxbinary= apply_treshhold_gradient_on_x(scaled_sobel,20,100)
+s_binary = apply_treshhold_color_channel(hue_saturation_lightness,80,255)
+
+color_binary = np.dstack(( np.zeros_like(sxbinary), sxbinary, s_binary)) * 255
+combined_binary = np.zeros_like(sxbinary)
+combined_binary[(s_binary == 1) | (sxbinary == 1)] = 1
+
+display_image_with_gray_cmap(convert_BRG_to_RGB(undist),combined_binary,'Undistorted Image','Threshold Image')
+
+```
+### Color and Gradient Threshold Result
+![Color and Gradient Threshold](./pictures/ColorAndGradientThreshold.png)
+ 
+### 4.  Apply a perspective transform to rectify binary image ("birds-eye view").
 
 
