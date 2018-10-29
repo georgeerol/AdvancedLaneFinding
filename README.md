@@ -253,7 +253,109 @@ of the base of the lane lines.  We used it as a starting point for where to sear
 the Sliding Window algorithm, placed around the line centers, to find and follow the lines up to the top of the frame.
 
 The parameters used for the Sliding Window are:
+* Number of sliding windows -> 9
+* Width of the windows -> 100
+* Minimum number of pixels found to recenter window -> 50
+
+#### Sliding Window Source Code
+```python
+def plot_sliding_window_fit_left_and_right_lane(warped_threshold_img, nwindows, margin, minpix):
+    histogram = np.sum(warped_threshold_img[warped_threshold_img.shape[0] // 2:, :], axis=0)
+
+    # Find the peak of the left and right halves of the histogram
+    midpoint = np.int(histogram.shape[0] / 2)
+    leftx_current = np.argmax(histogram[:midpoint])
+    rightx_current = np.argmax(histogram[midpoint:]) + midpoint
+
+    # Create an output image to draw on and  visualize the result
+    out_img = np.dstack((warped_threshold_img, warped_threshold_img, warped_threshold_img)) * 255
+
+    # Set height of windows
+    window_height = np.int(warped_threshold_img.shape[0] / nwindows)
+    # Identify the x and y positions of all nonzero pixels in the image
+    nonzero = warped_threshold_img.nonzero()
+    non_zero_y = np.array(nonzero[0])
+    non_zero_x = np.array(nonzero[1])
+
+    # Create empty lists to receive left and right lane pixel indices
+    left_lane_inds = []
+    right_lane_inds = []
+
+    # Step through the windows one by one
+    for window in range(nwindows):
+        # Identify window boundaries in x and y (and right and left)
+        win_y_low = warped_threshold_img.shape[0] - (window + 1) * window_height
+        win_y_high = warped_threshold_img.shape[0] - window * window_height
+        win_x_left_low = leftx_current - margin
+        win_x_left_high = leftx_current + margin
+        win_x_right_low = rightx_current - margin
+        win_x_right_high = rightx_current + margin
+        # Draw the windows on the visualization image
+        cv2.rectangle(out_img, (win_x_left_low, win_y_low), (win_x_left_high, win_y_high),
+                      (0, 255, 0), 2)
+        cv2.rectangle(out_img, (win_x_right_low, win_y_low), (win_x_right_high, win_y_high),
+                      (0, 255, 0), 2)
+
+        # Identify the nonzero pixels in x and y within the window
+        good_left_indices = ((non_zero_y >= win_y_low) & (non_zero_y < win_y_high) &
+                          (non_zero_x >= win_x_left_low) & (non_zero_x < win_x_left_high)).nonzero()[0]
+        good_right_indices = ((non_zero_y >= win_y_low) & (non_zero_y < win_y_high) &
+                           (non_zero_x >= win_x_right_low) & (non_zero_x < win_x_right_high)).nonzero()[0]
+
+        # Append these indices to the lists
+        left_lane_inds.append(good_left_indices)
+        right_lane_inds.append(good_right_indices)
+
+        # If you found > minpix pixels, recenter next window on their mean position
+        leftx_new = 0
+        rightx_new = 0
+        if len(good_left_indices) > minpix:
+            leftx_new = np.int(np.mean(non_zero_x[good_left_indices])) - leftx_current
+        if len(good_right_indices) > minpix:
+            rightx_new = np.int(np.mean(non_zero_x[good_right_indices])) - rightx_current
+
+        # move window in parallel
+        if (leftx_new > 0) and (rightx_new > 0):
+            leftx_current += int((leftx_new + rightx_new) / 2)
+            rightx_current += int((leftx_new + rightx_new) / 2)
+        if (leftx_new < 0) and (rightx_new < 0):
+            leftx_current += int((leftx_new + rightx_new) / 2)
+            rightx_current += int((leftx_new + rightx_new) / 2)
+
+    # Concatenate the arrays of indices
+    left_lane_inds = np.concatenate(left_lane_inds)
+    right_lane_inds = np.concatenate(right_lane_inds)
+
+    # Extract left and right line pixel positions
+    leftx = non_zero_x[left_lane_inds]
+    lefty = non_zero_y[left_lane_inds]
+    rightx = non_zero_x[right_lane_inds]
+    righty = non_zero_y[right_lane_inds]
+
+    # Fit a second order polynomial to each
+    left_fit = np.polyfit(lefty, leftx, 2)
+    right_fit = np.polyfit(righty, rightx, 2)
+
+    # Generate x and y values for plotting
+    ploty = np.linspace(0, warped_threshold_img.shape[0] - 1, warped_threshold_img.shape[0])
+    left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
+    right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
+    out_img[non_zero_y[left_lane_inds], non_zero_x[left_lane_inds]] = [255, 0, 0]
+    out_img[non_zero_y[right_lane_inds], non_zero_x[right_lane_inds]] = [0, 0, 255]
+    plt.imshow(out_img)
+    plt.plot(left_fitx, ploty, color='yellow')
+    plt.plot(right_fitx, ploty, color='yellow')
+    plt.xlim(0, 1280)
+    plt.ylim(720, 0)
 
 
+nwindows = 9
+margin = 100
+minpix = 50
 
+test_img = cv2.imread('../test_images/test2.jpg')
+warped_threshold_img = convert_to_warp_treshold_img(test_img)
+plot_sliding_window_fit_left_and_right_lane(warped_threshold_img, nwindows, margin, minpix)
+```
 
+### Sliding Window Result
