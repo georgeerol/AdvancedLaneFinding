@@ -358,4 +358,14 @@ warped_threshold_img = convert_to_warp_treshold_img(test_img)
 plot_sliding_window_fit_left_and_right_lane(warped_threshold_img, nwindows, margin, minpix)
 ```
 
-### Sliding Window Result
+#### Sliding Window Result
+The red pixels are the left lane search and the blue are the right lane
+search.
+
+![Sliding Window Result](./pictures/SlidingWindowResult.png)
+
+### 6. Determine the curvature of the lane and vehicle position with respect to center.
+
+
+
+
