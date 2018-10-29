@@ -2,38 +2,120 @@
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 
-In this project, your goal is to write a software pipeline to identify the lane boundaries in a video, but the main output or product we want you to create is a detailed writeup of the project.  Check out the [writeup template](https://github.com/udacity/CarND-Advanced-Lane-Lines/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup.  
+This project is to write a software pipeline that identify lane boundaries in a video. 
 
-Creating a great writeup:
----
-A great writeup should include the rubric points as well as your description of how you addressed each point.  You should include a detailed description of the code used in each step (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
 
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
 
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup.
-
-The Project
+## The Project
 ---
 
 The goals / steps of this project are the following:
 
-* Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
-* Apply a distortion correction to raw images.
-* Use color transforms, gradients, etc., to create a thresholded binary image.
-* Apply a perspective transform to rectify binary image ("birds-eye view").
-* Detect lane pixels and fit to find the lane boundary.
-* Determine the curvature of the lane and vehicle position with respect to center.
-* Warp the detected lane boundaries back onto the original image.
-* Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
+1. Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
+2.  Apply a distortion correction to raw images.
+3.  Use color transforms, gradients, etc., to create a thresholded binary image.
+4.  Apply a perspective transform to rectify binary image ("birds-eye view").
+5.  Detect lane pixels and fit to find the lane boundary.
+6.  Determine the curvature of the lane and vehicle position with respect to center.
+7.  Warp the detected lane boundaries back onto the original image.
+8. Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
-The images for camera calibration are stored in the folder called `camera_cal`.  The images in `test_images` are for testing your pipeline on single frames.  If you want to extract more test images from the videos, you can simply use an image writing method like `cv2.imwrite()`, i.e., you can read the video in frame by frame as usual, and for frames you want to save for later you can write to an image file.  
+## Project Structure
+* Images for camera calibration are stored in the folder called `camera_cal`. 
+* Images in `test_images` are for testing  different steps on single frames.   
+* Save examples images are located in `output_images`
 
-To help the reviewer examine your work, please save examples of the output from each stage of your pipeline in the folder called `output_images`, and include a description in your writeup for the project of what each image shows.    The video called `project_video.mp4` is the video your pipeline should work well on.  
 
-The `challenge_video.mp4` video is an extra (and optional) challenge for you if you want to test your pipeline under somewhat trickier conditions.  The `harder_challenge.mp4` video is another optional challenge and is brutal!
+## Goals
+### 1. Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
+The ultimate goal of this section is to measure some of the quantities that need to be known in order to control a car.
+For example to steer a car, we need to measure how much a lane is curving. To do that we need to map out the lens in our
+camera images, after transforming them to a different perspective. One way, is to look down on the road from above, a bird eye.
+But, in order to get this perspective transformation right, we first have to correct for the effect of image distortion.
+Camera doesnt create perfect images. Some of the objects in the images, especially ones near the edges, can get stretched
+or skewed in various ways and we need to correct that.
 
-If you're feeling ambitious (again, totally optional though), don't stop there!  We encourage you to go out and take video of your own, calibrate your camera and show us how you would implement this project from scratch!
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+
+
+#### Measuring Distortion
+When we talk about image distortion, we're talking about what happens when a camera looks at 3D objects in the real world
+and transforms them into a 2D image. So the first step in analysing camera images is to undo distortion so we can get
+correct and useful information out of them.
+
+So we know that distortion changes the size and  shapes of objects in an image, but how can we calibrate that? To do so
+we can take pictures of known shapes, then we'll be able to detect and correct any distortion errors. Any shapes can be 
+used to calibrate a camera but for this project a chessboard is used. A chessboard is great for calibration because its
+regular high contrast pattern makes it easy to detect automatically and we know what an undistorted flat chessboard looks
+like. Therefore multiple pictures of a chessboard against a flat surface is use to detect any distortion by looking at
+the difference between the apparent size and the shape of the squares in these images, and the size and shape 
+that they actually are. Then that information is used to calibrate our camera.
+
+Create a transform that maps theses distorted points to undistorted points and finally, undistort any images.
+![CameraCalibrationResult](./pictures/CameraCalibrationExample.png)
+
+
+#### Source Code for camera calibration
+* A object points array is set to 8x6 grid.
+* A loop trough calibration images using the `cv2.findChessboardCorners` is used to detect the chessboard corners in each
+images. When the corners are found they get append to the object points array and image points array with the detected points
+* With the list of object points and img points obtained we can use get the camera calibration matrix(mtx) and distortion
+coefficients(dist)
+
+###### Camera Calibration Source Code 
+```python
+def calculate_undistortion(img,nx,ny,objpoints, imgpoints):
+    # Use cv2.calibrateCamera() and cv2.undistort()
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    #Search for corners in the grayscaled image
+    ret, corners = cv2.findChessboardCorners(gray, (8,6), None)
+    img = cv2.drawChessboardCorners(img, (8,6), corners, ret)
+    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+    undist = cv2.undistort(img, mtx, dist, None, mtx)
+    return undist, mtx, dist
+    
+images = ['../camera_cal/calibration1.jpg', '../camera_cal/calibration2.jpg']
+for image in images:
+    original_img = cv2.imread(image)
+    undistorted_img, mtx, dist = calculate_undistortion(original_img,8,6,objpoints, imgpoints)
+    display_image(original_img,undistorted_img,"Original Image","Undistorted Image")
+
+```
+### Camera Calibration Result
+![CameraCalibrationResult](pictures/CameraCalibrationResult.png)
+
+
+Camera Calibration Matrix is:
+```sh
+[[1.15396093e+03 0.00000000e+00 6.69705357e+02]
+ [0.00000000e+00 1.14802496e+03 3.85656234e+02]
+ [0.00000000e+00 0.00000000e+00 1.00000000e+00]]
+
+```
+Camera Distortion Coefficients is:
+```sh
+[[-2.41017956e-01 -5.30721173e-02 -1.15810355e-03 -1.28318856e-04
+   2.67125290e-02]]
+```
+
+
+### 2.  Apply a distortion correction to raw images.
+With the Camera Calibration Matrix and Camera Distortion Coefficients, we were able to undistort test images.
+
+#### Test images Straight_line1
+![Straight_line1](./pictures/Straight_line1UndistortedImage.png)
+#### Test images Straight_line2
+![Straight_line2](./pictures/Straight_line2UndistortedImage.png)
+#### Test images test1
+![test1](./pictures/test1UndistortedImage.png)
+#### Test images test2
+![test2](./pictures/test2UndistortedImage.png)
+#### Test images test3
+![test3](./pictures/test3UndistortedImage.png)
+#### Test images test4
+![test4](./pictures/test4UndistortedImage.png)
+
+### 3.  Use color transforms, gradients, etc., to create a threshold binary image.
+Gradients is use to detect steep edges that are more likely to be lnaes in the first place.
+
 
