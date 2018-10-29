@@ -181,6 +181,47 @@ display_image_with_gray_cmap(convert_BRG_to_RGB(undist),combined_binary,'Undisto
 ### Color and Gradient Threshold Result
 ![Color and Gradient Threshold](./pictures/ColorAndGradientThreshold.png)
  
-### 4.  Apply a perspective transform to rectify binary image ("birds-eye view").
+### 4. Apply a perspective transform to rectify binary image ("birds-eye view").
+
+To ge the bird's eye view of the lane we applied Perspective Transform to an image and used the cv2.getPerspectiveTransform()
+to ge the Transform Parameter M.
+
+#### Perspective Transform Source Code
+```python
+def mask_img(undistorted_img,ignore_mask_color,):
+    mask = np.zeros_like(undist)
+    imshape = undist.shape
+    vertices = np.array([[(200,imshape[0]),(520, 500), (763, 500), (1110,imshape[0])]], dtype=np.int32)
+    cv2.fillPoly(mask, vertices, ignore_mask_color)
+    masked_img = cv2.bitwise_or(undist, mask)
+    return masked_img
+
+
+def warp_img(undist,masked_img):
+    imshape = undist.shape
+    vertices = np.array([[(200,imshape[0]),(520, 500), (763, 500), (1110,imshape[0])]], dtype=np.int32)
+    warp_vertices = np.array([[(300,imshape[0]),(300, 500), (imshape[1]-300, 500), (imshape[1]-300,imshape[0])]], dtype=np.int32)
+    M = cv2.getPerspectiveTransform(vertices.astype(np.float32), warp_vertices.astype(np.float32))
+    warped_img = cv2.warpPerspective(masked_img, M, (imshape[1], imshape[0]), flags=cv2.INTER_LINEAR)
+    return warped_img
+    
+test_images = ['../test_images/straight_lines1.jpg', '../test_images/straight_lines2.jpg']
+for image in test_images:
+    straight_line_img = cv2.imread(image)
+    undist = cv2.undistort(straight_line_img, mtx, dist, None, mtx)
+    masked_img = mask_img(undist,255)
+    warped_img = warp_img(undist,masked_img)
+    display_image(convert_BRG_to_RGB(undist),convert_BRG_to_RGB(masked_img),"Undistorted Image","Masked Image")
+    display_image(convert_BRG_to_RGB(undist),convert_BRG_to_RGB(warped_img),"Undistorted Image","Warped Image")
+
+```
+### Perspective Transform Result
+#### Test images Straight_line1
+![Straight_line1](./pictures/Straight_line1PerspectiveTransform.png)
+#### Test images Straight_line2
+![Straight_line2](./pictures/Straight_line2PerspectiveTransform.png)
+
+### 5. Detect lane pixels and fit to find the lane boundary.
+
 
 
