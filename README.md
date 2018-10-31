@@ -81,7 +81,7 @@ for image in images:
     display_image(original_img,undistorted_img,"Original Image","Undistorted Image")
 
 ```
-### Camera Calibration Result
+#### Camera Calibration Result
 ![CameraCalibrationResult](pictures/CameraCalibrationResult.png)
 
 
@@ -142,7 +142,7 @@ In the above images, we can see that the gradients taken in both the x and the y
 and pick up other edges. Taking the gradient in the x direction emphasizes edges closer to vertical.
 Alternatively, taking the gradient in the y direction emphasizes edges closer to horizontal.
   
-### Color and Gradient Threshold Source code
+###### Color and Gradient Threshold Source code
 *  To apply Gradient Threshold, we converted the image to gray scale and apply the Sobel x funtion with minimum of 20 and
 maximum of 100.
 * To apply Color  Threshold we converted the image to HLS color space and then apply the threshold values of
@@ -178,7 +178,7 @@ combined_binary[(s_binary == 1) | (sxbinary == 1)] = 1
 display_image_with_gray_cmap(convert_BRG_to_RGB(undist),combined_binary,'Undistorted Image','Threshold Image')
 
 ```
-### Color and Gradient Threshold Result
+#### Color and Gradient Threshold Result
 ![Color and Gradient Threshold](./pictures/ColorAndGradientThreshold.png)
  
 ### 4. Apply a perspective transform to rectify binary image ("birds-eye view").
@@ -193,7 +193,7 @@ vertices = np.array([[(200,imshape[0]),(520, 500), (763, 500), (1110,imshape[0])
 ```
 
 
-#### Perspective Transform Source Code
+###### Perspective Transform Source Code
 ```python
 def mask_img(undistorted_img,ignore_mask_color,):
     mask = np.zeros_like(undist)
@@ -257,7 +257,7 @@ The parameters used for the Sliding Window are:
 * Width of the windows -> 100
 * Minimum number of pixels found to recenter window -> 50
 
-#### Sliding Window Source Code
+###### Sliding Window Source Code
 ```python
 def plot_sliding_window_fit_left_and_right_lane(warped_threshold_img, nwindows, margin, minpix):
     histogram = np.sum(warped_threshold_img[warped_threshold_img.shape[0] // 2:, :], axis=0)
@@ -368,7 +368,7 @@ search.
 Using the the Sliding Window Algorithm above we were able to determined the curvature of the lane and vehicle position
 with respect to center
 
-#### Lane Curvature and Car Position Source Code
+######  Lane Curvature and Car Position Source Code
 ```python
 
 def display_lane_curvature_and_car_position(undist,unwarped):
@@ -412,7 +412,7 @@ for image in test_images:
 
 The `do_advance_lane_finding()` method contains all the steps(1 to 6) needed to do advance lane finding.
 
-#### Advance Lane Finding Source Code
+######  Advance Lane Finding Source Code
 ```python
 def do_advance_lane_finding(img):
     global prev_left_fit
