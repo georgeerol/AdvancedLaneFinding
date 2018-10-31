@@ -1,4 +1,7 @@
-## Advanced Lane Finding
+
+[image_0]: ./pictures/AdvanceLaneFinding.gif
+# Advanced Lane Finding
+![alt text][image_0]
 
 ## The Project
 ---
