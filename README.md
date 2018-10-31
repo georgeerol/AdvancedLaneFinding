@@ -365,7 +365,127 @@ search.
 ![Sliding Window Result](./pictures/SlidingWindowResult.png)
 
 ### 6. Determine the curvature of the lane and vehicle position with respect to center.
+Using the the Sliding Window Algorithm above we were able to determined the curvature of the lane and vehicle position
+with respect to center
 
+#### Lane Curvature and Car Position Source Code
+```python
+
+def display_lane_curvature_and_car_position(undist,unwarped):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    fontScale = 1
+    fontColor = (255,255,255)
+    lineType = 2
+    mask = np.zeros_like(undist)
+    mask[:,:,0] = unwarped
+    masked_img = cv2.bitwise_or(undist, mask)
+    curv_lane_text = "Curvature of the Lane -> {}".format(str(int(curve))) + "m."
+    if (car_dev < 0):
+        car_devation_text = "Car Deviation-> " + "{0:.2f}".format(abs(car_dev)) + "m. right of center"
+    else:
+        car_devation_text = "Car Deviation -> " + "{0:.2f}".format(abs(car_dev)) + "m. left of center"
+    text = curv_lane_text + " " + car_devation_text
+    cv2.putText(masked_img,curv_lane_text, (10,50), font, fontScale, fontColor, lineType)
+    cv2.putText(masked_img,car_devation_text, (10,90), font, fontScale, fontColor, lineType)
+    display_image(convert_BRG_to_RGB(undist),convert_BRG_to_RGB(masked_img),"Undisorted Image", "Mask Image")
+
+
+nwindows = 9
+margin = 100
+minpix = 50
+
+    
+test_images = ['../test_images/straight_lines1.jpg', '../test_images/straight_lines2.jpg']
+for image in test_images:
+    test_img = cv2.imread(image)
+    undist = cv2.undistort(test_img, mtx, dist, None, mtx)
+    warped_threshold_img = convert_to_warp_treshold_img(test_img)
+    left_fit, right_fit, curve, car_dev = sliding_window_fit(warped_threshold_img, nwindows, margin, minpix)
+    unwarped = unwarp_fitted_lines(undist,warped_threshold_img, left_fit, right_fit)
+    display_lane_curvature_and_car_position(undist,unwarped)
+```
+
+#### Lane Curvature and Car Position Result
+![Lane Curvature and Car Position](./pictures/LaneCurvatureAndCarPosition.png)
+
+### 7 and 8  Warp the detected lane boundaries back onto the original image and Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
+
+The `do_advance_lane_finding()` method contains all the steps(1 to 6) needed to do advance lane finding.
+
+#### Advance Lane Finding Source Code
+```python
+def do_advance_lane_finding(img):
+    global prev_left_fit
+    global prev_right_fit
+    global prev_curve
+    global prev_car_dev
+    global miss_frame
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1
+    font_color = (255, 255, 255)
+    line_type = 2
+
+    nwindows = 9
+    margin = 100
+    minpix = 50
+
+    new_img, undist = img_to_wrap(img, mtx, dist)
+    if prev_car_dev is None:
+        left_fit, right_fit, curve, car_dev = sliding_window_fit(warped_threshold_img, nwindows, margin, minpix)
+        prev_left_fit = left_fit
+        prev_right_fit = right_fit
+        prev_curve = curve
+        prev_car_dev = car_dev
+        miss_frame = 0
+    else:
+        left_fit, right_fit, curve, car_dev = previous_line_fit(new_img, prev_left_fit, prev_right_fit)
+
+    # try sliding window fit if previous_line_fit don't look good
+    if abs(car_dev - prev_car_dev) > 0.1:
+        left_fit, right_fit, curve, car_dev = sliding_window_fit(warped_threshold_img, nwindows, margin, minpix)
+
+    # decide whether we use the new calculation or keep the old
+    if (abs(car_dev - prev_car_dev) > 0.2) and (miss_frame < 10):
+        left_fit = prev_left_fit
+        right_fit = prev_right_fit
+        curve = prev_curve
+        car_dev = prev_car_dev
+        miss_frame += 1
+    else:
+        prev_left_fit = left_fit
+        prev_right_fit = right_fit
+        prev_curve = curve
+        prev_car_dev = car_dev
+
+    unwarped = unwarp_fitted_lines(new_img, left_fit, right_fit)
+    mask = np.zeros_like(undist)
+    mask[:, :, 2] = unwarped
+    masked_img = cv2.bitwise_or(undist, mask)
+    curv_lane_text = "Curvature of the Lane -> {}".format(str(int(curve))) + " m."
+    if car_dev < 0:
+        car_devation_text = "Car Deviation -> " + "{0:.2f}".format(abs(car_dev)) + " m. right of center."
+    else:
+        car_devation_text = "Car Deviation -> " + "{0:.2f}".format(abs(car_dev)) + " m. left of center."
+    cv2.putText(masked_img, curv_lane_text, (10, 50), font, font_scale, font_color, line_type)
+    cv2.putText(masked_img, car_devation_text, (10, 90), font, font_scale, font_color, line_type)
+    return masked_img
+    
+    
+    
+clip = VideoFileClip("../project_video.mp4")
+video_output = '../project_video_output.mp4'
+out_clip = clip.fl_image(do_advance_lane_finding)
+%time out_clip.write_videofile(video_output, audio=False)
+
+```
+#### Advance Lane Finding Video Result
+[Video](./video/project_video_output.mp4)
+
+### Discussion
+The Advance Lane Finding Algorithm may not work well on local road due to bike lane mark on the road or other markings
+such as direction arrows. In addition, It will not work well when the car is making turn. However it will work well on highway
+as seen from the video.
 
 
 
